@@ -2,6 +2,7 @@
   "watch": [
     "src"
   ],
+  "ignore": [],
   "ext": ".ts",
   "exec": "ts-node ./src/index.ts"
 }

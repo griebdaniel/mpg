@@ -5,6 +5,8 @@ import { Strategy as GoogleStrategy } from 'passport-google-oauth20';
 import session from 'express-session';
 import pgSession from 'connect-pg-simple';
 import { PrismaClient, User } from '@prisma/client';
+import { buildSchema } from 'graphql';
+import { graphqlHTTP } from 'express-graphql';
 
 import dotenv from 'dotenv';
 
@@ -12,7 +14,108 @@ dotenv.config();
 const app = express();
 const prisma = new PrismaClient();
 
-app.use(cors({origin: ['http://localhost:3000'], credentials: true}));
+const schema = buildSchema(`
+  type Settings {
+    pace: Float
+    size: Int
+    duration: Int
+    speed: Int
+  }
+
+  type User {
+    id: String!
+    name: String!
+    email: String!
+    username: String
+    highscore: Int!
+    settings: Settings
+  }
+
+  type Query {
+    users: [User]
+    user(id: String, email: String, username: String): User
+    leaderboard(top: Int = 20): [User]
+    rank(username: String): Int
+  }
+
+  input SettingsInput {
+    pace: Float
+    size: Int
+    duration: Int
+    speed: Int
+  }
+
+  type UserUpdate {
+    username(username: String): User
+    highscore(highscore: Int): User
+    settings(settings: SettingsInput): User
+  }
+
+  type Mutation {
+    updateUser(id: String, email: String, username: String): UserUpdate
+  }
+`);
+
+class UserUpdate {
+  constructor(private user: any) { }
+
+  username = async ({ username }: any) => {
+    try {
+      const res = await prisma.user.update({ where: { id: this.user.id }, data: { username } });
+      return res;
+    } catch (e) {
+      return null;
+    }
+  }
+  highscore = async ({ highscore }: any) => {
+    try {
+      const res = await prisma.user.update({ where: { id: this.user.id }, data: { highscore } });
+      return res;
+    } catch (e) {
+      return null;
+    }
+  }
+  settings = async ({ settings }: any) => {
+    try {
+      const res = await prisma.user.update({ where: { id: this.user.id }, data: { settings } });
+      return res;
+    } catch (e) {
+      return null;
+    }
+  }
+}
+
+// The root provides a resolver function for each API endpoint
+const rootValue = {
+  users: async () => await prisma.user.findMany(),
+  user: async ({ id, email, username }: any, req: Request) => {
+    const where = id ? { id } : (email ? { email } : (username ? { username } : { id: (req.user as any).id }));
+    return await prisma.user.findFirst({ where });
+  },
+  leaderboard: async ({ top }: any) => {
+    const users = await prisma.user.findMany();
+    users.sort((u1, u2) => u2.highscore - u1.highscore).slice(0, top);
+    return users;
+  },
+  rank: async ({ username }: any, req: Request) => {
+    if (!username && !req.user) {
+      return 0;
+    }
+    console.log(username, req.user);
+    if (!username) {
+      username = (req.user as any).username;
+    }
+    const rank = (await rootValue.leaderboard(Number.MAX_VALUE)).findIndex(user => user.username === username) + 1;
+    return rank;  
+  },
+  updateUser: async ({ id, email, username }: any, req: Request) => {
+    const where = id ? { id } : (email ? { email } : (username ? { username } : { id: (req.user as any).id }));
+    const user = await prisma.user.findFirst({ where });
+    return new UserUpdate(user);
+  },
+};
+
+app.use(cors({ origin: ['http://localhost:3000'], credentials: true }));
 
 app.use(session({
   store: new (pgSession(session))({ conString: process.env.DATABASE_URL }),
@@ -20,6 +123,8 @@ app.use(session({
   resave: false,
   saveUninitialized: false
 }));
+
+
 
 app.use(passport.initialize());
 app.use(passport.session());
@@ -52,6 +157,10 @@ passport.use(new GoogleStrategy({
   return done(null as any, user);
 }));
 
+app.use('/graphql', graphqlHTTP({
+  schema, rootValue, graphiql: true
+}));
+
 //Unprotected Routes
 app.get('/', (req, res) => {
   res.send('<h1>Home</h1>');
@@ -75,9 +184,9 @@ app.get('/auth/success', checkUserLoggedIn, (req, res) => {
 });
 
 app.get('/username/available', async (req, res) => {
-  const username = req.body.username;
+  const username = req.query.username as string;
   const user = await prisma.user.findFirst({ where: { username } });
-  res.send(user ? true : false);
+  res.send(user ? false : true);
 });
 
 app.get('/set/username', async (req, res) => {

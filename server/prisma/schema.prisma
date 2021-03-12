@@ -19,10 +19,12 @@ model Session {
 }
 
 model User {
-  id       String  @id
-  email    String  @unique
-  name     String?
-  username String? @unique
+  id        String  @id
+  email     String  @unique
+  name      String?
+  username  String? @unique
+  highscore Int     @default(0)
+  settings  Json?
 
   @@map(name: "users")
 }
