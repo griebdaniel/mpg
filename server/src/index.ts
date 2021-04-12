@@ -4,7 +4,7 @@ import passport from 'passport';
 import { Strategy as GoogleStrategy } from 'passport-google-oauth20';
 import session from 'express-session';
 import pgSession from 'connect-pg-simple';
-import { PrismaClient, User } from '@prisma/client';
+import { PrismaClient, User, Message } from '@prisma/client';
 import { buildSchema } from 'graphql';
 import { graphqlHTTP } from 'express-graphql';
 
@@ -15,6 +15,8 @@ const app = express();
 const prisma = new PrismaClient();
 
 const schema = buildSchema(`
+  scalar Date
+
   type Settings {
     pace: Float
     size: Int
@@ -31,8 +33,15 @@ const schema = buildSchema(`
     settings: Settings
   }
 
+  type Message {
+    id: Int
+    message: String!
+    date: Date!
+  }
+
   type Query {
     users: [User]
+    messages: [Message]
     user(id: String, email: String, username: String): User
     leaderboard(top: Int = 20): [User]
     rank(username: String): Int
@@ -53,6 +62,7 @@ const schema = buildSchema(`
 
   type Mutation {
     updateUser(id: String, email: String, username: String): UserUpdate
+    message(message: String): Boolean
   }
 `);
 
@@ -88,6 +98,7 @@ class UserUpdate {
 // The root provides a resolver function for each API endpoint
 const rootValue = {
   users: async () => await prisma.user.findMany(),
+  messages: async () => await prisma.message.findMany(),
   user: async ({ id, email, username }: any, req: Request) => {
     const where = id ? { id } : (email ? { email } : (username ? { username } : { id: (req.user as any).id }));
     return await prisma.user.findFirst({ where });
@@ -113,6 +124,10 @@ const rootValue = {
     const user = await prisma.user.findFirst({ where });
     return new UserUpdate(user);
   },
+  message: async ({ message }: any) => {
+    await prisma.message.create({ data: { message, date: new Date() } });
+    return true;
+  }
 };
 
 app.use(cors({ origin: ['http://localhost:3000'], credentials: true }));

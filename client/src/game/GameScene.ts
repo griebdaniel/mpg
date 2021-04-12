@@ -1,17 +1,44 @@
-import { Vector3 } from 'three';
-import { Target } from './Target2';
+import { Scene, Vector3, Color } from 'three';
 import _ from 'lodash';
 
-export class GamePhysics {
+import { Click, ClickSettings } from "./Click2";
+import { Target, TargetSettings } from './Target2';
+import CircleInstancedMesh from './CircleInstancedMesh';
+
+export default class GameScene extends Scene {
   width: number;
   height: number;
-  targets: Target[];
+  targetInstanceMesh = new CircleInstancedMesh();
 
-  update(time: number): void {  
+  targets: Target[] = [];
+  onTargetMiss: (target: Target) => void;
+
+  constructor() {
+    super();
+    this.background = new Color('#f2fafd');
+    this.add(this.targetInstanceMesh);
+  }
+
+  cleanup() {
+    this.targetInstanceMesh.dispose();
+  }
+
+  update(time: number): void {
+    _.remove(this.targets, target => { 
+      const expired = target.age + time > target.duration;
+      if (expired && this.onTargetMiss) {
+        this.onTargetMiss(target);
+      }
+      return expired;
+    });
+
+
     this.targets.forEach(target => this.updatePosition(target, time));
     this.targets.forEach(target => this.updateSize(target, time));
+
+    this.targetInstanceMesh.update(this.targets);
   }
-  
+
   updatePosition(target: Target, time: number) {
     const preUpdatePosition = target.position.clone();
     target.updatePosition(time);
@@ -19,7 +46,7 @@ export class GamePhysics {
       target.position = preUpdatePosition;
     }
   }
-  
+
   handleCollision(target: Target) {
     if (Math.abs(target.position.x) + target.size - this.width / 2 > 0) {
       target.direction = new Vector3(-target.direction.x, target.direction.y, 0).normalize();
@@ -58,12 +85,12 @@ export class GamePhysics {
       target.size = preUpdateSize;
     }
   }
-  
+
   separateTarget(target: Target) {
     type SeparateTarget = Target & { separateCount: number, originalPosition: Vector3 };
     let updatedTargets = [target] as SeparateTarget[];
     let separable = true;
-  
+
     while (separable) {
       if (updatedTargets.length === 0) {
         break;
@@ -71,7 +98,7 @@ export class GamePhysics {
       
       const targetsToSeparate = _.uniq([...updatedTargets]);
       updatedTargets = [];
-  
+
       for (const target of [...targetsToSeparate]) {
         if (!target.separateCount) {
           target.separateCount = 1;
@@ -79,18 +106,18 @@ export class GamePhysics {
         if (!target.originalPosition) {
           target.originalPosition = target.position.clone();
         }
-        if (target.separateCount++ > 2) {
+        if (++target.separateCount > 2) {
           separable = false;
           break;
         }
         const xdiff = Math.abs(target.position.x) + target.size - this.width / 2;
         if (xdiff > 0) {
-          target.position.x -= (xdiff) * Math.sign(target.position.x);
+          target.position.x -= xdiff * Math.sign(target.position.x);
           updatedTargets.push(target);
         }
         const ydiff = Math.abs(target.position.y) + target.size - this.height / 2;
         if (ydiff > 0) {
-          target.position.y -= (ydiff) * Math.sign(target.position.y);
+          target.position.y -= ydiff * Math.sign(target.position.y);
           updatedTargets.push(target);
         }
         for (const target2 of this.targets as SeparateTarget[]) {
@@ -110,13 +137,62 @@ export class GamePhysics {
       }
     }
     (this.targets as SeparateTarget[]).forEach((target, i) => {
+
       if (!separable && target.originalPosition) {
         target.position = target.originalPosition;
       }
       delete target.originalPosition;
       delete target.separateCount;
     });
-  
+
     return separable;
   }
+
+  reset(): void {
+    this.targets = [];
+  }
+
+  addTarget(targetSettings?: TargetSettings): Target {
+    let target: Target;
+
+    if (!targetSettings.position) {
+      targetSettings.position = this.getRandomPosition();
+    }
+    if (!targetSettings.direction) {
+      targetSettings.direction = new Vector3(_.random(-1, 1, true), _.random(-1, 1, true), 0).normalize();
+    }
+
+    target = new Target(targetSettings);
+    this.targets.push(target);
+
+    return target;
+  }
+
+  removeTarget(target: Target): void {
+    _.remove(this.targets, target);
+  }
+
+  getTargetAt(position: Vector3): Target {
+    for (const target of this.targets) {
+      if (target.position.distanceTo(position) < target.size) {
+        return target;
+      }
+    }
+    return undefined;
+  }
+
+  getRandomPosition(): Vector3 {
+    let position: Vector3;
+    outer:
+    for (; ;) {
+      position = new Vector3(_.random(-this.width / 2, this.width / 2), _.random(-this.height / 2, this.height / 2), 0);
+      for (const target of this.targets) {
+        if (target.position.distanceTo(position) < target.size) {
+          continue outer;
+        }
+      }
+      return position;
+    }
+  }
+
 }

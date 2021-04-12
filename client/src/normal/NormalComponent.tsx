@@ -1,26 +1,25 @@
 import React, { RefObject, ReactNode } from 'react';
-import Game from '../game/Game';
-import { Target } from '../game/Target';
+import GameScene from '../game/GameScene';
+import { Target } from '../game/Target2';
 import GameComponent from '../game/GameComponent';
 import { Vector3 } from 'three';
 import Modal from '@material-ui/core/Modal';
-import Typography from '@material-ui/core/Typography'
+import Typography from '@material-ui/core/Typography';
 import { Button } from '@material-ui/core';
 import { Link } from 'react-router-dom';
+import { genericService } from '../services/generic-service';
 
-import './NormalComponent.css'
+import './NormalComponent.css';
+import { settingsAtTime } from './difficulty';
 
 interface State {
   open: boolean;
+  score: number;
 }
 
 class NormalComponent extends React.Component<{}, State> {
-  paceChanges = [[1, 0], [4, 60]];
-  sizeChange = [[8, 0], [4, 60]];
-  durationChange = [[3.5, 0], [1.5, 60]];
-  speedChange = [[0, 0], [10, 60]];
-
-  game: Game;
+  loggedInUser: any;
+  game: GameScene;
   gameComponentRef: RefObject<GameComponent>;
   gameComponent: GameComponent;
 
@@ -30,13 +29,15 @@ class NormalComponent extends React.Component<{}, State> {
   constructor(props: {}) {
     super(props);
     this.gameComponentRef = React.createRef();
-    this.state = { open: false };
+    this.state = { score: 0, open: false };
   }
 
   componentDidMount(): void {
     this.gameComponent = this.gameComponentRef.current;
     this.game = this.gameComponent.game;
-    this.game.showLifes = true;
+    // this.game.showLifes = true;
+    // this.game.onLifeOut.subscribe(this.onLifeOut);
+    this.game.onTargetMiss = this.onTargetMiss;
     this.start();
   }
 
@@ -50,46 +51,32 @@ class NormalComponent extends React.Component<{}, State> {
   }
 
   addTarget = (): void => {
-    const settings = this.getSettings(this.gameTime);
+    const settings = settingsAtTime(this.gameTime / 1000);
 
-    const speed = this.gameComponent.toSceneSpeed(settings.speed);
-    const maxSize = this.gameComponent.toSceneSize(settings.maxSize);
-    const sizeChangeDuration = settings.sizeChangeDuration * 1000;
+    const speed = this.gameComponent.pxToScene(settings.speed);
+    const maxSize = this.gameComponent.pxToScene(settings.size);
+    const duration = settings.duration * 1000;
 
-    this.game.addTarget({ speed, maxSize, sizeChangeDuration });
+    this.game.addTarget({ speed, maxSize, duration });
     this.timer = setTimeout(this.addTarget, 1000 / settings.pace);
   }
 
-  getSetting(gameTime: number, changes: Array<Array<number>>): number {
-    gameTime /= 1000;
-    for (let i = 0; i < changes.length - 1; i++) {
-      if (gameTime > changes[i][1] && gameTime < changes[i + 1][1]) {
-        const multiplier = (gameTime - changes[i][1]) / (changes[i + 1][1] - changes[i][1])
-        return changes[i][0] + (changes[i + 1][0] - changes[i][0]) * multiplier;
+  onLifeOut = async () => {
+    try {
+      const loggedInUser = await genericService.getLoggedInUser();
+      if (this.state.score > loggedInUser.highscore) {
+        genericService.setHighscore(this.state.score);
       }
-    }
-    return changes[changes.length - 1][0];
-  }
-
-  getSettings(gameTime: number): { pace: number; maxSize: number; sizeChangeDuration: number; speed: number } {
-    const pace = this.getSetting(gameTime, this.paceChanges);
-    const maxSize = this.getSetting(gameTime, this.sizeChange);
-    const sizeChangeDuration = this.getSetting(gameTime, this.durationChange);
-    const speed = this.getSetting(gameTime, this.speedChange);
-
-    return { pace, maxSize, sizeChangeDuration, speed };
-  }
-
-  onLifeOut = (): void => {
+    } catch (e) { }
     this.setState({ open: true });
-    setTimeout(() => this.gameComponent.pause(), 0);
+    setTimeout(() => this.gameComponent.stop(), 0);
     clearTimeout(this.timer);
   }
 
   tryAgain = (): void => {
     this.setState({ open: false });
     this.game.reset();
-    this.gameComponent.resume();
+    this.gameComponent.start();
     this.start();
   }
 
@@ -97,24 +84,27 @@ class NormalComponent extends React.Component<{}, State> {
     return performance.now() - this.gameStartTime;
   }
 
-  onTargetClick = (target: Target, pos: Vector3): void => {
-    this.game.removeTarget(target)
-    this.game.addClick({ pos, clickType: 'Success' });
+  onTargetClick = (target: Target, position: Vector3): void => {
+    this.game.removeTarget(target);
+    // this.game.addSuccessClick({ position });
+    this.setState({ score: this.state.score + 1 });
   }
 
-  onBackgroudClick = (pos: Vector3): void => {
-    this.game.addClick({ pos, clickType: 'Fail' });
-    this.game.removeLife();
-    if (this.game.lifeCount === 0) {
-      this.onLifeOut();
-    }
+  onBackgroudClick = (position: Vector3): void => {
+    // this.game.addMissClick({ position });
+    // this.game.removeLife();
+  }
+
+  onTargetMiss = (target: Target): void => {
+    // this.game.removeLife();
   }
 
   render(): ReactNode {
-    const { open } = this.state;
+    const { open, score } = this.state;
 
     return (
       <div style={{ height: '100vh' }}>
+        <Typography variant="h3" color='primary' style={{position: 'absolute', margin: 15, pointerEvents: 'none' }}> { score }</Typography>
         <GameComponent
           ref={this.gameComponentRef}
           onTargetClick={this.onTargetClick}
@@ -129,14 +119,14 @@ class NormalComponent extends React.Component<{}, State> {
         >
           <div className="paper">
             <Typography style={{ paddingBottom: '20px' }} variant="h6" id="modal-title">
-              Your score is: {(this.game && this.game.score)}
+              Your score is: {score}
             </Typography>
-            <Button onClick={this.tryAgain}> Try Again </Button>
-            <Button color="inherit"><Link className="link" to="/">Quit</Link></Button>
+            <Button variant="contained" color="primary" onClick={this.tryAgain}> Try Again </Button>
+            <Button component={Link} to="/" variant="contained" color="primary" style={{ marginTop: 10 }}>Quit</Button>
           </div>
         </Modal>
       </div>
-    )
+    );
   }
 }
 

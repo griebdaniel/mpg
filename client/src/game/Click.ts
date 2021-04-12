@@ -37,7 +37,7 @@ export class Click extends Mesh {
         return 1;
       }
       return x;
-    }
+    };
 
     this.opacityChangeDistribution = (x: number): number => {
       if (x < 0) {
@@ -53,6 +53,7 @@ export class Click extends Mesh {
     this.changeValue = 0;
     this.changeDuration = 500;
     this.maxSize = 0.16;
+    this.scale.set(0, 0, 1);
   }
 
   update(time: number): void {

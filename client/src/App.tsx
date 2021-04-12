@@ -1,28 +1,27 @@
 import React, { ReactNode } from 'react';
 import './App.css';
 import GameTester from './game-tester/GameTester';
-import CustomComponent from './custom/CustomComponent';
+
 import NormalComponent from './normal/NormalComponent';
 import MainComponent from './main/MainComponent';
 import { BrowserRouter as Router, Route } from 'react-router-dom';
+import SupportComponent from './support/SupportComponent';
+import PracticeGame from './game/practice/PracticeGame';
+import TestGame from './game/test/TestGame';
+import StandardGame from './game/standard/StandardGame';
+import AdminPage from './admin/AdminPage';
 
-
-
-
-class App extends React.Component {
-
-  render(): ReactNode {
-    return (
-      <div className="Game-container">
-        <Router>
-          <Route exact path="/" component={MainComponent}></Route>
-          <Route path="/normal" component={NormalComponent}></Route>
-          <Route path="/custom" component={CustomComponent}></Route>
-          <Route path="/test" component={GameTester}></Route>
-        </Router>
-      </div>
-    );
-  }
+function App() {
+  return (
+    <Router>
+      <Route exact path="/" component={MainComponent} />
+      <Route path="/practice" component={PracticeGame} />
+      <Route path="/test" component={TestGame} />
+      <Route path="/standard" component={StandardGame} />
+      <Route path="/support" component={SupportComponent} />
+      <Route path="/admin" component={AdminPage} />
+    </Router>
+  );
 }
 
 export default App;

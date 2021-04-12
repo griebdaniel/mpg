@@ -1,31 +1,36 @@
 {
-  "name": "mpg",
+  "name": "client2",
   "version": "0.1.0",
   "private": true,
   "dependencies": {
-    "@material-ui/core": "^4.9.8",
-    "@material-ui/icons": "^4.9.1",
-    "@types/jest": "24.0.11",
-    "@types/node": "11.13.7",
-    "@types/react": "16.8.14",
-    "@types/react-dom": "^17.0.0",
+    "@material-ui/core": "^4.11.3",
+    "@material-ui/icons": "^4.11.2",
+    "@material-ui/lab": "^4.0.0-alpha.57",
+    "@testing-library/jest-dom": "^5.11.9",
+    "@testing-library/react": "^11.2.5",
+    "@testing-library/user-event": "^12.7.2",
+    "@types/jest": "^26.0.20",
+    "@types/node": "^12.20.4",
+    "@types/react": "^17.0.2",
+    "@types/react-dom": "^17.0.1",
     "@types/react-router-dom": "^5.1.7",
+    "@types/three": "^0.125.3",
     "axios": "^0.21.1",
-    "clsx": "^1.1.0",
-    "decimal.js": "10.1.1",
-    "dotenv": "^8.2.0",
+    "clsx": "^1.1.1",
+    "csx": "^10.0.2",
+    "everpolate": "^0.0.3",
+    "fontsource-roboto": "^4.0.0",
     "formik": "^2.2.6",
-    "lodash": "^4.17.15",
-    "prop-types": "15.7.2",
-    "react": "16.8.6",
+    "lodash": "^4.17.21",
+    "react": "^17.0.1",
     "react-dom": "^17.0.1",
     "react-router-dom": "^5.2.0",
-    "react-scripts": "^3.4.4",
-    "rxjs": "6.5.2",
-    "stats-js": "^1.0.1",
-    "three": "0.104.0",
-    "typeface-roboto": "0.0.54",
-    "typescript": "3.4.4"
+    "react-scripts": "4.0.2",
+    "rxjs": "^6.6.3",
+    "three": "^0.126.1",
+    "typescript": "^4.1.5",
+    "web-vitals": "^1.1.0",
+    "yup": "^0.32.9"
   },
   "scripts": {
     "start": "react-scripts start",
@@ -34,7 +39,13 @@
     "eject": "react-scripts eject"
   },
   "eslintConfig": {
-    "extends": "react-app"
+    "extends": [
+      "react-app",
+      "react-app/jest"
+    ],
+    "rules": {
+      "semi": "error"
+    }
   },
   "browserslist": {
     "production": [
@@ -47,12 +58,5 @@
       "last 1 firefox version",
       "last 1 safari version"
     ]
-  },
-  "devDependencies": {
-    "@types/lodash": "^4.14.149",
-    "@typescript-eslint/eslint-plugin": "^2.26.0",
-    "@typescript-eslint/parser": "^2.26.0",
-    "eslint": "^6.8.0",
-    "eslint-plugin-react": "^7.19.0"
   }
 }

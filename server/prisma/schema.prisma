@@ -28,3 +28,11 @@ model User {
 
   @@map(name: "users")
 }
+
+model Message {
+  id      Int      @id @default(autoincrement())
+  message String
+  date    DateTime
+
+  @@map(name: "messages")
+}

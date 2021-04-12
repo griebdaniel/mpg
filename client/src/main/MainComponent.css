@@ -1,20 +1,19 @@
 .header {
   display: flex;
   flex-direction: column;
-  height: 500px;
+  height: 300px;
   background-color: rgb(66, 84, 185);
-  /* align-items: center; */
   justify-content: center;
 }
 
 .headerText {
-  font-family: Roboto;
+  /* font-family: Roboto;
   font-weight: 200;
   font-size: 62px;
   line-height: 56px;
   align-self: center;
   color: rgba(255, 255, 255, 0.9);
-  margin-bottom: 70px;
+  margin-bottom: 70px; */
 }
 
 .startButton {
