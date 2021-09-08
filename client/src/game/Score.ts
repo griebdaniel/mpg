@@ -1,22 +1,26 @@
 import * as THREE from 'three';
 import { Vector3 } from 'three';
 
+
+const font = new Promise<THREE.Font>((resolve, reject) => {
+    new THREE.FontLoader().load('fonts/gentilis_regular.typeface.json', font => {
+        resolve(font);
+    });
+});
+
 export class Score extends THREE.Mesh {
     lifeSpan = 1000;
     age = 0;
+    font: Promise<THREE.Font>;
 
     constructor(private score: number, private pos: Vector3) {
         super();
 
-        const loader = new THREE.FontLoader();
-
-        loader.load('fonts/gentilis_regular.typeface.json', font => {
-            const color = 0x006699;
-
+        font.then(font => {
             const matPositive = new THREE.MeshBasicMaterial({
                 color: 'green',
                 transparent: true,
-                
+
                 side: THREE.DoubleSide
             });
 
