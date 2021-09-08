@@ -7,6 +7,7 @@ import pgSession from 'connect-pg-simple';
 import { PrismaClient, User, Message } from '@prisma/client';
 import { buildSchema } from 'graphql';
 import { graphqlHTTP } from 'express-graphql';
+import path from 'path';
 
 import dotenv from 'dotenv';
 
@@ -226,6 +227,13 @@ app.get('/logout', (req, res) => {
   req.session.destroy(data => data);
   req.logout();
   res.send();
+});
+
+
+app.use(express.static(path.join(__dirname, '../../client/build')));
+
+app.get('/*', function (req, res) {
+    res.sendFile(path.join(__dirname, '../../client/build', 'index.html'));
 });
 
 app.listen(process.env.PORT, () => console.log(`App is listening on port ${process.env.PORT}`));
