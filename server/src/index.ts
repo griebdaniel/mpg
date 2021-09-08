@@ -177,11 +177,6 @@ app.use('/graphql', graphqlHTTP({
   schema, rootValue, graphiql: true
 }));
 
-//Unprotected Routes
-app.get('/', (req, res) => {
-  res.send('<h1>Home</h1>');
-});
-
 app.get('/user/logged', (req, res) => {
   res.send(req.user ? true : false);
 });
