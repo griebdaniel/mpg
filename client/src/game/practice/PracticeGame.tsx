@@ -10,6 +10,7 @@ import PracticeSettings from './PracticeSettings';
 import { createStyles, Drawer, IconButton, WithStyles, withStyles } from '@material-ui/core';
 import { ArrowForward } from '@material-ui/icons';
 import { genericService } from '../../services/generic-service';
+import * as THREE from 'three';
 
 interface State {
   open: boolean;
@@ -51,6 +52,7 @@ class PracticeGame extends React.Component<WithStyles<typeof styles>, State> {
     this.gamePhysics.targets = this.targets;
 
     this.game.add(this.circleMeshes);
+
     this.game.start();
 
     try {
@@ -73,7 +75,7 @@ class PracticeGame extends React.Component<WithStyles<typeof styles>, State> {
     _.remove(this.targets, target => {
       if (target.age + time > target.duration) return true;
       return false;
-    } );
+    });
     _.remove(this.clicks, click => click.age + time > click.duration);
     this.gamePhysics.update(time);
     this.clicks.forEach(click => click.update(time));
@@ -195,13 +197,13 @@ class PracticeGame extends React.Component<WithStyles<typeof styles>, State> {
             onHide={this.hideDrawer}
           />
         </Drawer>
-        <main  style={{ marginLeft: open ? drawerWidth : 0, height: '100vh' }}>
-        <canvas
-          // style={{ display: 'block', width: '100%', height: '100%' }}
-          ref={this.canvasRef}
-          onClick={this.onClick}
-        >
-        </canvas>
+        <main style={{ marginLeft: open ? drawerWidth : 0, height: '100vh' }}>
+          <canvas
+            // style={{ display: 'block', width: '100%', height: '100%' }}
+            ref={this.canvasRef}
+            onClick={this.onClick}
+          >
+          </canvas>
         </main>
 
       </div>

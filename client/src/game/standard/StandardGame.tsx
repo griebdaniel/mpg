@@ -9,6 +9,7 @@ import { Color, Vector3 } from 'three';
 import { Button, Dialog, DialogTitle, Typography, withStyles } from '@material-ui/core';
 import { genericService } from '../../services/generic-service';
 import { Link } from 'react-router-dom';
+import { Score } from '../Score';
 
 interface State {
   dialogOpen: boolean;
@@ -34,6 +35,7 @@ class StandardGame extends React.Component<{}, State> {
 
   targets: Target[] = [];
   clicks: Click[] = [];
+  // scores: Score[] = [];
   circleMeshes = new CircleInstancedMesh();
   user: any;
   timer: NodeJS.Timeout;
@@ -49,8 +51,8 @@ class StandardGame extends React.Component<{}, State> {
   nextSpecialTargetTime = 0;
 
   specialTargets: SpecialTarget[] = [
-    { color: new Color('#ed6d6d'), score: 2, count: 30 },
-    { color: new Color('#ffb300'), score: 3, count: 10 },
+    { color: new Color('#ed6d6d'), score: 2, count: 40 },
+    { color: new Color('#ffb300'), score: 3, count: 20 },
     { color: new Color('#f7ff0a'), score: 4, count: 5 },
   ];
 
@@ -67,6 +69,8 @@ class StandardGame extends React.Component<{}, State> {
 
     this.game.add(this.circleMeshes);
     this.game.start();
+
+
 
     this.specialTargetPace = this.specialTargets.reduce((previous, current) => previous + current.count, 0) / (this.gameDuration - this.state.duration);
     try {
@@ -101,9 +105,17 @@ class StandardGame extends React.Component<{}, State> {
 
     this.gameTime += time;
 
+    this.game.scene.children.forEach(child => {
+      if (child instanceof Score) {
+        child.update(time);
+        if ( child.age > child.lifeSpan) {
+          this.game.scene.remove(child);
+        }
+      }
+    });
+
     if (this.gameTime >= this.gameDuration * 1000) {
       this.onTimeout();
-
       return;
     }
     _.remove(this.targets, target => {
@@ -177,11 +189,17 @@ class StandardGame extends React.Component<{}, State> {
     if (target) {
       const specialTarget = this.specialTargets.find(specialTarget => specialTarget.color.equals(target.color));
       this.setState({ score: this.state.score + (specialTarget ? specialTarget.score : 1) });
+
+      this.game.add(new Score(specialTarget?.score ?? 1, position));
+
       _.remove(this.targets, target);
-      this.clicks.push(new Click({ position, baseColor: new Color('green'), backgroundColor: this.game.scene.background as Color }));
+      // this.clicks.push(new Click({ position, baseColor: new Color('green'), backgroundColor: this.game.scene.background as Color }));
+      
     } else {
       this.setState({ score: this.state.score - 1 });
-      this.clicks.push(new Click({ position, baseColor: new Color('red'), backgroundColor: this.game.scene.background as Color }));
+      // this.clicks.push(new Click({ position, baseColor: new Color('red'), backgroundColor: this.game.scene.background as Color }));
+      this.game.add(new Score(-1, position));
+      // this.scores.push(new Score(-1, position));
     }
   }
 
